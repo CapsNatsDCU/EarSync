@@ -5,6 +5,7 @@
 //  Created by Josiah Lenowitz on 3/4/25.
 //
 
+//Josiah is oldest and caleb is our team baby
 import SwiftUI
 import SwiftData
 import Translation
