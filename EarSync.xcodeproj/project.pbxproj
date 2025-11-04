@@ -12,6 +12,7 @@
 			containerPortal = 07B4AD0C2D776E1C009107F3 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 07B4AD132D776E1C009107F3;
+			remoteInfo = EarSync;
 		};
 		07B4AD332D776E1D009107F3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
