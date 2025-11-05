@@ -17,11 +17,12 @@ private let sharedSynth = AVSpeechSynthesizer()
 func callToAIAsync(text: String) async -> String {
     print(text)
     let detected = await languageDetection(text: text)
-    print(detected)
-    print("[debug] starting translation")
+    let direction = detectENorES(from: text)
+    let targetLang = (direction == "es") ? "en" : "es"
+    print("[debug] translating from \(detected) to \(targetLang)")
     do {
         let installedSource = Locale.Language(identifier: detected)
-        let target = Locale.Language(identifier: "es")
+        let target = Locale.Language(identifier: targetLang)
         let session = TranslationSession(installedSource: installedSource, target: target)
         let result = try await session.translate(text).targetText
         print("result ", result)

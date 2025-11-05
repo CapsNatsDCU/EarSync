@@ -76,6 +76,11 @@ class ConversationPart: Codable, Identifiable {
         try container.encode(originalText, forKey: .originalText)
         try container.encode(translatedText, forKey: .translatedText)
     }
+    
+    init(text: String) async {
+        originalText = text
+        translatedText = await callToAIAsync(text: text)
+    }
 
 }
 
@@ -84,6 +89,7 @@ final class Phrasebook: Codable, Identifiable {
     var bookID = UUID()
     var userLan: String = "en"
     var speakerLan: String = "es"
+    var phrases: [Phrase] = []
 
     init(userLan: String = "en") {
         self.userLan = userLan
@@ -102,10 +108,14 @@ final class Phrasebook: Codable, Identifiable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(userLan, forKey: .userLan)
     }
+    
+    func addPhrase(_ p: Phrase) {
+        phrases.append(p)
+    }
 }
 
 @Model
-final class Phrase {
+final class Phrase: Identifiable {
     var phraseID: UUID = UUID()
     
     var usrLanText: String
@@ -119,5 +129,10 @@ final class Phrase {
     init(c: ConversationPart) {
         self.usrLanText = c.originalText
         self.transText = c.translatedText
+    }
+    
+    init(text: String) async {
+        self.usrLanText = text
+        self.transText = await callToAIAsync(text: text)
     }
 }
