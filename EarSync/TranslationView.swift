@@ -7,29 +7,50 @@ import AVFoundation
 struct TranslationView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var item: Item
+
     @State private var text = ""
     @State private var isRecording = false
+
     @State private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     @State private var recognitionTask: SFSpeechRecognitionTask?
     @State private var configuration: TranslationSession.Configuration?
     @State private var availableLanguages = [Locale.Language]()
+
+    @AppStorage("currentScenarioMode") private var currentScenarioMode: String = ScenarioMode.tourist.rawValue
+
     private let languageAvailability = LanguageAvailability()
-    
+
+    // Audio / speech properties
     private let audioEngine = AVAudioEngine()
     private let speechRecognizer = SFSpeechRecognizer()
-    
+
     @MainActor
     private func loadSupportedLanguages() async {
         availableLanguages = await languageAvailability.supportedLanguages
     }
-    
+
     var body: some View {
         ScrollView {
+            // Show current scenario mode chosen on Home
+            if let mode = ScenarioMode(rawValue: currentScenarioMode) {
+                HStack {
+                    Text("Mode: \(mode.title)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.bottom, 8)
+            }
+
+            // Show all conversation parts for this item
             ForEach(item.conversation, id: \ConversationPart.persistentModelID) { part in
-                ZStack{
+                ZStack {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color(Color.accentColor))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.secondary, lineWidth: 1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.secondary, lineWidth: 1)
+                        )
                     VStack {
                         HStack {
                             Text(part.originalText)
@@ -45,7 +66,7 @@ struct TranslationView: View {
                                     modelContext.insert(part)
                                     try modelContext.save()
                                 } catch {
-                                    print("[debug] failed to save converstion part: \(error)")
+                                    print("[debug] failed to save conversation part: \(error)")
                                 }
                             }) {
                                 Image(systemName: part.isSaved ? "star.slash.fill" : "star")
@@ -77,24 +98,34 @@ struct TranslationView: View {
                         }
                     }
                     .padding(.vertical)
-                    
                 }
             }
-            // 📝 Text Input Box with Buttons Inside
+
+            // Input area with microphone and send button
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.systemGray6)) // Light background
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.secondary, lineWidth: 1))
-                
+                    .fill(Color(.systemGray6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.secondary, lineWidth: 1)
+                    )
+
                 HStack {
-                    // 🎤 Microphone Button (Left)
+                    // Microphone button
                     Button(action: {
+                        #if targetEnvironment(simulator)
+                        // On the simulator, the input audio device is often missing and causes long delays.
+                        print("[audio] Microphone capture is disabled on simulator.")
+                        isRecording = false
+                        return
+                        #else
                         isRecording.toggle()
                         if isRecording {
                             Task { startRecording() }
                         } else {
                             Task { await stopRecording() }
                         }
+                        #endif
                     }) {
                         Image(systemName: isRecording ? "mic.fill" : "mic")
                             .foregroundStyle(.white)
@@ -104,30 +135,32 @@ struct TranslationView: View {
                             .clipShape(Circle())
                             .shadow(radius: 3)
                     }
-                    
-                    // 📝 Text Input Area
+
+                    // Text input
                     TextEditor(text: $text)
-                        .frame(height: 100) // Adjust height
-                        .background(Color.clear) // Make transparent
+                        .frame(height: 100)
+                        .background(Color.clear)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                         .padding(.horizontal, 5)
                         .scrollContentBackground(.hidden)
-                    
-                    // 🌍 Translate Button (Right)
+
+                    // Translate/send button
                     Button(action: {
-                        let input = text
+                        let input = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !input.isEmpty else { return }
 
                         // Ensure this item is attached to the current ModelContext before mutating relationships
                         modelContext.insert(item)
 
-                            Task {
-                                await item.appendPart(input)
-                                await MainActor.run { self.text = "" }
-                            }
-                        
+                        // Note: actual translation logic is in callToAIAsync(...) in NetworkCalls.swift.
+                        // If that function returns the same text, add a fallback there.
+                        Task {
+                            await item.appendPart(input)
+                            await MainActor.run { self.text = "" }
+                        }
                     }) {
                         Image(systemName: "arrow.forward.circle.fill")
-                            .foregroundStyle(.colorModeOpposite)//make this depend on light/dark mode
+                            .foregroundStyle(.colorModeOpposite)
                             .font(.title3)
                             .padding(10)
                             .background(Color.accentColor)
@@ -135,10 +168,9 @@ struct TranslationView: View {
                             .shadow(radius: 3)
                     }
                 }
-                .padding(.horizontal, 8) // Spacing inside the box
+                .padding(.horizontal, 8)
             }
-            .frame(height: 120) // Make the entire text box larger
-
+            .frame(height: 120)
         }
         .onAppear {
             requestSpeechPermission()
@@ -146,74 +178,116 @@ struct TranslationView: View {
         .padding(.horizontal, 25)
         .defaultScrollAnchor(.bottom)
     }
-    
-    // ✅ Request speech permission
+
+    // MARK: - Speech Permission
+
     private func requestSpeechPermission() {
         SFSpeechRecognizer.requestAuthorization { status in
             if status != .authorized {
-                print("Speech recognition permission denied!")
+                print("Speech recognition permission denied")
             }
         }
     }
-    
-    // ✅ Start recording voice
+
+    // MARK: - Recording
+
+    /// Starts speech recording and streaming to Apple's speech recognizer.
+    /// On simulator this is disabled because of missing audio devices.
     @MainActor private func startRecording() {
-        guard let recognizer = speechRecognizer, recognizer.isAvailable else { return }
-        
-        // Configure audio session for recording + playback so TTS can still route to speaker
+        #if targetEnvironment(simulator)
+        print("[audio] startRecording called on simulator; skipping.")
+        isRecording = false
+        return
+        #endif
+
+        guard let recognizer = speechRecognizer, recognizer.isAvailable else {
+            print("[audio] Speech recognizer not available")
+            isRecording = false
+            return
+        }
+
+        // Configure audio session for recording and playback
         let session = AVAudioSession.sharedInstance()
         do {
-            try session.setCategory(.playAndRecord, mode: .measurement, options: [.duckOthers, .defaultToSpeaker])
+            try session.setCategory(.playAndRecord,
+                                    mode: .measurement,
+                                    options: [.duckOthers, .defaultToSpeaker])
             try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("[audio] Failed to configure AVAudioSession: \(error)")
+            isRecording = false
+            return
         }
-        
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        guard let recognitionRequest = recognitionRequest else { return }
-        
-        let inputNode = audioEngine.inputNode
-        recognitionRequest.shouldReportPartialResults = true
-        
-        recognitionTask = recognizer.recognitionTask(with: recognitionRequest) { result, error in
+
+        // Create request
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        recognitionRequest = request
+        request.shouldReportPartialResults = true
+
+        // Start recognition task
+        recognitionTask = recognizer.recognitionTask(with: request) { result, error in
             if let result = result {
                 DispatchQueue.main.async {
                     self.text = result.bestTranscription.formattedString
                 }
             }
             if error != nil {
-                Task { await stopRecording() }
+                Task { await self.stopRecording() }
             }
         }
-        
-        let format = inputNode.inputFormat(forBus: 0)
+
+        let inputNode = audioEngine.inputNode
+
+        // Get the current format from the input node
+        let nodeFormat = inputNode.outputFormat(forBus: 0)
+
+        // If the device reports 0 Hz or 0 channels, bail out to avoid a crash
+        if nodeFormat.sampleRate == 0 || nodeFormat.channelCount == 0 {
+            print("[audio] Input format invalid, skipping installTap")
+            isRecording = false
+            return
+        }
+
+        // Remove any tap that might already be there
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 2048, format: format) { buffer, _ in
-            // Guard against empty buffers which trigger: mDataByteSize (0) should be non-zero
+
+        // Let AVAudioEngine choose the right format
+        inputNode.installTap(onBus: 0,
+                             bufferSize: 2048,
+                             format: nil) { buffer, _ in
             if buffer.frameLength > 0 {
-                recognitionRequest.append(buffer)
+                self.recognitionRequest?.append(buffer)
             }
         }
-        
+
         audioEngine.prepare()
-        try? audioEngine.start()
+        do {
+            try audioEngine.start()
+        } catch {
+            print("[audio] Failed to start audio engine: \(error)")
+            isRecording = false
+        }
     }
-    
-    // ✅ Stop recording voice
+
+    /// Stops recording and tears down the audio engine and recognition task.
     @MainActor private func stopRecording() async {
+        #if !targetEnvironment(simulator)
         audioEngine.stop()
         audioEngine.inputNode.removeTap(onBus: 0)
-        
-        self.recognitionRequest?.endAudio()
-        self.recognitionTask?.cancel()
-        self.recognitionRequest = nil
-        self.recognitionTask = nil
-        
+        #endif
+
+        recognitionRequest?.endAudio()
+        recognitionTask?.cancel()
+        recognitionRequest = nil
+        recognitionTask = nil
+
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         } catch {
             print("[audio] Failed to deactivate AVAudioSession: \(error)")
         }
+
+        isRecording = false
     }
 }
 
@@ -234,4 +308,3 @@ struct TranslationView: View {
         return Text("Preview failed: \(String(describing: error))")
     }
 }
-
