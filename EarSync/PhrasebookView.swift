@@ -137,7 +137,7 @@ struct PhrasebookView: View {
                             .onTapGesture {
                                 // still allow opening the full-screen phrase view
                                 Task {
-                                    var temp = await Phrase(text: phr.es)
+                                    let temp = await Phrase(text: phr.es)
                                     temp.transText = phr.en
                                     await MainActor.run {
                                         selectedPhrase = temp
@@ -214,7 +214,7 @@ struct PhrasebookView: View {
         }
         .padding()
         .sheet(item: $selectedPhrase) { phr in
-            singlePhraseView(p: phr, pb: p)
+            singlePhraseView(p: phr)
         }
         .task {
             // leave empty for now, user-added phrases will show here
@@ -225,65 +225,74 @@ struct PhrasebookView: View {
 struct singlePhraseView: View {
     @Environment(\.dismiss) private var dismiss
     var p: Phrase
-    var pb: Phrasebook
     
     var body: some View {
         VStack{
-            Text(p.usrLanText)
-                .font(.system(size: 45))
-                .minimumScaleFactor(0.01)
-
-            Spacer()
-
-            Text(p.transText)
-                .font(.system(size: 100))
-                .minimumScaleFactor(0.1)
-            
-            Spacer()
-            
             ZStack{
                 Rectangle()
                     .background(.colorModeMatch)
                 HStack{
+                    Spacer()
                     Button(action: {
                         speekText(text: p.transText)
                     }, label: {
                         Image(systemName: "speaker.wave.3")
                             .font(.system(size: 75))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.colorModeOpposite)
                             .contentTransition(.symbolEffect(.replace))
                             .padding(.trailing)
                     })
-                    Divider()
+                    
+                    Spacer()
+                    
                     Button(action: {
-                        //delete phrase from phrasebook
+                        dismiss()
                     }, label: {
                         Image(systemName: "xmark.circle")
                             .font(.system(size: 75))
-                            .foregroundStyle(.red)
+                            .foregroundStyle(.colorModeOpposite)
                             .contentTransition(.symbolEffect(.replace))
                             .padding(.trailing)
                     })
+                    Spacer()
                 }
             }
-            .cornerRadius(20)
             .frame(maxHeight: 125)
-                
+
+            
+            Spacer()
+            
+            HStack{
+                Spacer()
+                Text(p.usrLanText)
+                    .font(.system(size: 45))
+                    .minimumScaleFactor(0.1)
+                    .padding(20)
+                    .foregroundStyle(Color.gray)
+                    .frame(alignment: .trailing)
+                    .multilineTextAlignment(TextAlignment.trailing)
+            }
+            
+            Spacer()
+            
+            Text(p.transText)
+                .font(.system(size: 1000))
+                .minimumScaleFactor(0.01)
+                .padding(20)
+                .foregroundStyle(.black)
+            
+            
+            
+
         }
-        .padding()
         .background(Color.accentColor)
+        .foregroundStyle(.colorModeMatch)
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(false)
-        .overlay(alignment: .topLeading) {
-            Button(action: { dismiss() }) {
-                Image(systemName: "xmark")
-                    .font(.title2)
-                    .padding(12)
-                    .background(.ultraThinMaterial, in: Circle())
-            }
-            .padding()
-        }
     }
     
 }
 
+#Preview {
+    singlePhraseView(p: Phrase(usrLanText: "I want to eat", transText: "Yo querio comer"))
+}
