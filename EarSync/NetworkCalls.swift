@@ -15,20 +15,26 @@ private let sharedSynth = AVSpeechSynthesizer()
 /// New async API — does the work off the main actor and returns a result you can `await`.
 @available(iOS 26, *)
 func callToAIAsync(text: String) async -> String {
+    let demoMode = UserDefaults.standard.bool(forKey: "demoMode")
     print(text)
     let detected = await languageDetection(text: text)
     let direction = detectENorES(from: text)
     let targetLang = (direction == "es") ? "en" : "es"
     print("[debug] translating from \(detected) to \(targetLang)")
-    do {
-        let installedSource = Locale.Language(identifier: detected)
-        let target = Locale.Language(identifier: targetLang)
-        let session = TranslationSession(installedSource: installedSource, target: target)
-        let result = try await session.translate(text).targetText
-        print("result ", result)
-        return result
-    } catch {
-        return text
+    if demoMode {
+        do {
+            let installedSource = Locale.Language(identifier: detected)
+            let target = Locale.Language(identifier: targetLang)
+            let session = TranslationSession(installedSource: installedSource, target: target)
+            let result = try await session.translate(text).targetText
+            print("result ", result)
+            return result
+        } catch {
+            return text
+        }
+    } else {
+        //do somthing
+        //speciffically start the ai pass
     }
 }
 
@@ -113,6 +119,4 @@ private func bestVoiceForENorES(_ lang: String) -> AVSpeechSynthesisVoice? {
     return AVSpeechSynthesisVoice.speechVoices().first { $0.language.hasPrefix(lang) }
 }
 
-func transToEnglish(text: String) -> String {
-   return text
-}
+

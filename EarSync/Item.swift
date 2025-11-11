@@ -136,3 +136,4 @@ final class Phrase: Identifiable {
         self.transText = await callToAIAsync(text: text)
     }
 }
+

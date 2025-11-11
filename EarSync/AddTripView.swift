@@ -42,3 +42,7 @@ struct AddTripView: View {
         }
     }
 }
+
+#Preview {
+    AddTripView(onSave: { _, _ in })
+}

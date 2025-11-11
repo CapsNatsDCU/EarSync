@@ -9,12 +9,17 @@ import SwiftUI
 
 struct SettingsView: View {
     @AppStorage("smartDownloadEnabled") private var smartDownloadEnabled = false
+    @AppStorage("demoMode") private var demoMode = false
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Downloads") {
                     Toggle("Enable smart downloads", isOn: $smartDownloadEnabled)
+                }
+                
+                Section("Demo Mode") {
+                    Toggle("Enable Demo Mode", isOn: $demoMode)
                 }
 
                 Section("Account") {
@@ -24,4 +29,8 @@ struct SettingsView: View {
             .navigationTitle("Settings")
         }
     }
+}
+
+#Preview {
+    SettingsView()
 }
