@@ -137,3 +137,20 @@ final class Phrase: Identifiable {
     }
 }
 
+// Updated Trip model to include the language we detected
+@Model
+final class Trip: Identifiable {
+    var id = UUID()
+    var destination: String
+    var date: Date
+    var smartDownload: Bool
+    var practiceLanguage: String
+    
+    init(destination: String, date: Date, smartDownload: Bool, practiceLanguage: String) {
+        self.destination = destination
+        self.date = date
+        self.smartDownload = smartDownload
+        self.practiceLanguage = practiceLanguage
+    }
+}
+

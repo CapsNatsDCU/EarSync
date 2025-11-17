@@ -6,10 +6,11 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct TravelCalendarView: View {
-    // Start with an empty list; user will add trips
-    @State private var trips: [Trip] = []
+    @Environment(\.modelContext) private var modelContext
+    @Query private var trips: [Trip]
 
     // Controls sheet presentation
     @State private var showingAddTrip = false
@@ -60,7 +61,7 @@ struct TravelCalendarView: View {
                         smartDownload: true,
                         practiceLanguage: lang
                     )
-                    trips.append(newTrip)
+                    modelContext.insert(newTrip)
                 }
             }
         }
@@ -78,11 +79,4 @@ struct TravelCalendarView: View {
     }
 }
 
-// Updated Trip model to include the language we detected
-struct Trip: Identifiable {
-    let id = UUID()
-    var destination: String
-    var date: Date
-    var smartDownload: Bool
-    var practiceLanguage: String
-}
+
