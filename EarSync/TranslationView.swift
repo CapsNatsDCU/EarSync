@@ -15,6 +15,9 @@ struct TranslationView: View {
     @State private var recognitionTask: SFSpeechRecognitionTask?
     @State private var configuration: TranslationSession.Configuration?
     @State private var availableLanguages = [Locale.Language]()
+    
+    let copyText: String = ""
+    @State private var copied = false
 
     @AppStorage("currentScenarioMode") private var currentScenarioMode: String = ScenarioMode.tourist.rawValue
 
@@ -85,6 +88,17 @@ struct TranslationView: View {
                                 .font(.body)
                                 .padding(.leading)
                                 .foregroundColor(.black)
+                                .onLongPressGesture {
+                                                UIPasteboard.general.string = copyText
+                                                copied = true
+                                            }
+                                            .overlay(alignment: .topTrailing) {
+                                                if copied {
+                                                    Text("Copied")
+                                                        .font(.caption2)
+                                                        .padding(4)
+                                                }
+                                            }
                             Button(action: {
                                 speekText(text: part.translatedText)
                             }, label: {
@@ -291,20 +305,3 @@ struct TranslationView: View {
     }
 }
 
-#Preview {
-    do {
-        let container = try ModelContainer(for: Item.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let item = Item(timestamp: Date())
-        container.mainContext.insert(item)
-
-        // Add sample conversation entry
-        Task {
-            await item.appendPart("I would like to buy a hamburger")
-        }
-
-        return TranslationView(item: item)
-            .modelContainer(container)
-    } catch {
-        return Text("Preview failed: \(String(describing: error))")
-    }
-}

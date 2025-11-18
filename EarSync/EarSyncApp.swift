@@ -13,6 +13,10 @@ struct EarSyncApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
+            ConversationPart.self,
+            Phrasebook.self,
+            Phrase.self,
+            Trip.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

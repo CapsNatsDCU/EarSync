@@ -9,6 +9,7 @@ import Foundation
 import Translation
 import NaturalLanguage
 import AVFoundation
+import FoundationModels
 
 private let sharedSynth = AVSpeechSynthesizer()
 
@@ -35,6 +36,24 @@ func callToAIAsync(text: String) async -> String {
     } else {
         //do somthing
         //speciffically start the ai pass
+        return await AIpass(text: text)
+    }
+}
+
+@available(iOS 26, *)
+private func AIpass(text: String) async -> String {
+    let session = LanguageModelSession()
+
+    do {
+        // This returns LanguageModelSession.Response<String>
+        let response = try await session.respond(to: "help refine this spanish text:\(text) DO NOT return any text other than than the translation!")
+        // Get the plain text from the response
+        let newText = response.content
+
+        return newText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? text : newText
+    } catch {
+        print("[AI] error: \(error)")
+        return text
     }
 }
 
