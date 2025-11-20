@@ -8,8 +8,9 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @AppStorage("smartDownloadEnabled") private var smartDownloadEnabled = false
+    @AppStorage("smartDownloadEnabled") private var smartDownloadEnabled = true
     @AppStorage("demoMode") private var demoMode = false
+    @AppStorage("proMode") private var proMode = false
 
     var body: some View {
         NavigationStack {
@@ -20,6 +21,10 @@ struct SettingsView: View {
                 
                 Section("Demo Mode") {
                     Toggle("Enable Demo Mode", isOn: $demoMode)
+                }
+                
+                Section("Pro Mode") {
+                    Toggle("Enable Pro Mode ($$)", isOn: $demoMode)
                 }
 
                 Section("Account") {

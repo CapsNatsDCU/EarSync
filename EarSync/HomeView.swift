@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct HomeView: View {
     // Remember user’s last choice across launches
@@ -19,6 +20,7 @@ struct HomeView: View {
     @State private var showCamera = false
     @State private var showPronunciation = false
     @State private var showSync = false
+    @State private var showStreamingTranslate = false
 
     // Temporary item used when we show TranslationView in a sheet
     @State private var tempItem = Item(timestamp: Date())
@@ -100,7 +102,8 @@ struct HomeView: View {
                         showTranslate: $showTranslate,
                         showCamera: $showCamera,
                         showPronunciation: $showPronunciation,
-                        showSync: $showSync
+                        showSync: $showSync,
+                        showLiveStreaming: $showStreamingTranslate
                     )
 
                     Spacer(minLength: 30)
@@ -151,6 +154,13 @@ struct HomeView: View {
                         .navigationBarTitleDisplayMode(.inline)
                 }
             }
+            .sheet(isPresented: $showStreamingTranslate) {
+                NavigationStack {
+                    StreamingTranslationView()
+                        .navigationTitle("Streaming translation")
+                        .navigationBarTitleDisplayMode(.inline)
+                }
+            }
         }
     }
 
@@ -169,6 +179,9 @@ struct ModeActionsView: View {
     @Binding var showCamera: Bool
     @Binding var showPronunciation: Bool
     @Binding var showSync: Bool
+    @Binding var showLiveStreaming: Bool
+
+    @AppStorage("currentScenarioMode") var currentScenarioMode: String = ScenarioMode.tourist.rawValue
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -180,11 +193,20 @@ struct ModeActionsView: View {
             // If your team wants to remove something globally,
             // remove it from this shared block.
             // ------------------------------------------------
+            if currentScenarioMode == "sync"
+            {
+                ActionRow(title: "Sync / connect to EarSync devices", systemImage: "person.2.wave.2") {
+                    showSync = true
+                }
+            }
             ActionRow(title: "Open phrasebook", systemImage: "books.vertical") {
                 showPhrasebook = true
             }
             ActionRow(title: "Start live translation", systemImage: "waveform") {
                 showTranslate = true
+            }
+            ActionRow(title: "Live streaming translation", systemImage: "mic.badge.plus") {
+                showLiveStreaming = true
             }
             ActionRow(title: "Camera / visual translate", systemImage: "camera.viewfinder") {
                 showCamera = true
@@ -194,9 +216,6 @@ struct ModeActionsView: View {
             }
             ActionRow(title: "Pronunciation training", systemImage: "mic") {
                 showPronunciation = true
-            }
-            ActionRow(title: "Sync / connect to EarSync devices", systemImage: "person.2.wave.2") {
-                showSync = true
             }
 
             // ------------------------------------------------
@@ -286,4 +305,8 @@ struct SyncSessionView: View {
         }
         .padding()
     }
+}
+
+#Preview{
+    HomeView()
 }

@@ -313,7 +313,7 @@ struct singlePhraseView: View {
                                transText: "Quiero comer algo delicioso y espectacular con una bebida alcohólica, y luego quiero tener un polvo increíble."))
 }
 #Preview {
-    var pb = Phrasebook()
+    let pb = Phrasebook()
 
     pb.phrases.append(
         Phrase(usrLanText: "Where is the bathroom?", transText: "¿Dónde está el baño?")
