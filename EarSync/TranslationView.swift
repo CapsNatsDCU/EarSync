@@ -20,12 +20,16 @@ struct TranslationView: View {
     @State private var copied = false
 
     @AppStorage("currentScenarioMode") private var currentScenarioMode: String = ScenarioMode.tourist.rawValue
+    // Shared input language for STT across the app
+    @AppStorage("inputLanguage") private var inputLanguage: String = "en-US"
 
     private let languageAvailability = LanguageAvailability()
 
     // Audio / speech properties
     private let audioEngine = AVAudioEngine()
-    private let speechRecognizer = SFSpeechRecognizer()
+    private var speechRecognizer: SFSpeechRecognizer? {
+        SFSpeechRecognizer(locale: Locale(identifier: inputLanguage))
+    }
 
     @MainActor
     private func loadSupportedLanguages() async {
@@ -44,6 +48,14 @@ struct TranslationView: View {
                 }
                 .padding(.bottom, 8)
             }
+
+            // Input language toggle shared with StreamingTranslationView
+            Picker("Input language", selection: $inputLanguage) {
+                Text("English").tag("en-US")
+                Text("Spanish").tag("es-ES")
+            }
+            .pickerStyle(.segmented)
+            .padding(.bottom, 8)
 
             // Show all conversation parts for this item
             ForEach(item.conversation, id: \ConversationPart.persistentModelID) { part in

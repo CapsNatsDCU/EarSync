@@ -18,15 +18,25 @@ struct StreamingTranslationView: View {
     @State private var isRecording = false
     @State private var recognizedText: String = ""
     @State private var translatedText: String = ""
+
+    // Shared input language for STT (English / Spanish, etc.)
+    @AppStorage("inputLanguage") private var inputLanguage: String = "en-US"
     
     // Speech recognition support
     private let audioEngine = AVAudioEngine()
-    private let speechRecognizer: SFSpeechRecognizer? = SFSpeechRecognizer()
+    private var speechRecognizer: SFSpeechRecognizer? {
+        SFSpeechRecognizer(locale: Locale(identifier: inputLanguage))
+    }
     @State private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     @State private var recognitionTask: SFSpeechRecognitionTask?
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            Picker("Input language", selection: $inputLanguage) {
+                Text("English").tag("en-US")
+                Text("Spanish").tag("es-ES")
+            }
+            .pickerStyle(.segmented)
             Text("Live Translator")
                 .font(.title2.bold())
             
