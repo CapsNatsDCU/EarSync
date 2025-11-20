@@ -19,51 +19,51 @@ struct PhrasebookView: View {
         (
             name: "Restaurant",
             phrases: [
-                ("Table for two, please.", "Mesa para dos, por favor."),
-                ("The bill, please.", "La cuenta, por favor."),
-                ("Water, please.", "Agua, por favor."),
-                ("Do you have a menu in English?", "¿Tiene menú en inglés?"),
-                ("Is it spicy?", "¿Pica?"),
-                ("Coffee with milk, please.", "Un café con leche, por favor."),
-                ("Beer", "Cerveza"),
-                ("Ice", "Hielo"),
-                ("Fork", "Tenedor"),
-                ("Napkin", "Servilleta")
+                ("Mesa para dos, por favor.", "Table for two, please."),
+                ("La cuenta, por favor.", "The bill, please."),
+                ("Agua, por favor.", "Water, please."),
+                ("¿Tiene menú en inglés?", "Do you have a menu in English?"),
+                ("¿Pica?", "Is it spicy?"),
+                ("Un café con leche, por favor.", "Coffee with milk, please."),
+                ("Cerveza", "Beer"),
+                ("Hielo", "Ice"),
+                ("Tenedor", "Fork"),
+                ("Servilleta", "Napkin")
             ]
         ),
         (
             name: "Transportation",
             phrases: [
-                ("Where is the metro?", "¿Dónde está el metro?"),
-                ("Where is the bus stop?", "¿Dónde está la parada de autobús?"),
-                ("I need a taxi.", "Necesito un taxi."),
-                ("How much is the ticket?", "¿Cuánto cuesta el billete?"),
-                ("Which stop is this?", "¿Cuál es esta parada?"),
-                ("Airport", "Aeropuerto"),
-                ("Train station", "Estación de tren")
+                ("¿Dónde está el metro?", "Where is the metro?"),
+                ("¿Dónde está la parada de autobús?", "Where is the bus stop?"),
+                ("Necesito un taxi.", "I need a taxi."),
+                ("¿Cuánto cuesta el billete?", "How much is the ticket?"),
+                ("¿Cuál es esta parada?", "Which stop is this?"),
+                ("Aeropuerto", "Airport"),
+                ("Estación de tren", "Train station")
             ]
         ),
         (
             name: "Grocery / Shopping",
             phrases: [
-                ("How much is this?", "¿Cuánto cuesta esto?"),
-                ("Where is the supermarket?", "¿Dónde está el supermercado?"),
-                ("I am just looking.", "Solo estoy mirando."),
-                ("Do you accept cards?", "¿Acepta tarjeta?"),
-                ("Bag", "Bolsa"),
-                ("Milk", "Leche"),
-                ("Bread", "Pan"),
-                ("Cheese", "Queso")
+                ("¿Cuánto cuesta esto?", "How much is this?"),
+                ("¿Dónde está el supermercado?", "Where is the supermarket?"),
+                ("Solo estoy mirando.", "I am just looking."),
+                ("¿Acepta tarjeta?", "Do you accept cards?"),
+                ("Bolsa", "Bag"),
+                ("Leche", "Milk"),
+                ("Pan", "Bread"),
+                ("Queso", "Cheese")
             ]
         ),
         (
             name: "About me",
             phrases: [
-                ("I am from the United States.", "Soy de Estados Unidos."),
-                ("I don’t speak Spanish very well.", "No hablo español muy bien."),
-                ("Can you repeat that?", "¿Puede repetirlo?"),
-                ("My name is …", "Me llamo…"),
-                ("I’m traveling for vacation.", "Estoy viajando por vacaciones.")
+                ("Soy de Estados Unidos.", "I am from the United States."),
+                ("No hablo español muy bien.", "I don’t speak Spanish very well."),
+                ("¿Puede repetirlo?", "Can you repeat that?"),
+                ("Me llamo…", "My name is …"),
+                ("Estoy viajando por vacaciones.", "I’m traveling for vacation.")
             ]
         )
     ]
@@ -227,72 +227,103 @@ struct singlePhraseView: View {
     var p: Phrase
     
     var body: some View {
-        VStack{
-            ZStack{
-                Rectangle()
-                    .background(.colorModeMatch)
-                HStack{
-                    Spacer()
-                    Button(action: {
-                        speekText(text: p.transText)
-                    }, label: {
-                        Image(systemName: "speaker.wave.3")
-                            .font(.system(size: 75))
-                            .foregroundStyle(.colorModeOpposite)
-                            .contentTransition(.symbolEffect(.replace))
-                            .padding(.trailing)
-                    })
+        GeometryReader {geo in
+            ZStack {
+                Color.accentColor
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    
+                    // Top controls
+                    HStack {
+                        Button {
+                            speekText(text: p.transText)
+                        } label: {
+                            Image(systemName: "speaker.wave.3.fill")
+                                .font(.system(size: 48, weight: .semibold))
+                        }
+                        
+                        Spacer()
+                        
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 48, weight: .semibold))
+                        }
+                    }
+                    .padding(.top, 25)
+                    .padding(.horizontal, 12)
+                    .foregroundStyle(.colorModeOpposite)
                     
                     Spacer()
                     
-                    Button(action: {
-                        dismiss()
-                    }, label: {
-                        Image(systemName: "xmark.circle")
-                            .font(.system(size: 75))
-                            .foregroundStyle(.colorModeOpposite)
-                            .contentTransition(.symbolEffect(.replace))
-                            .padding(.trailing)
-                    })
+                    // Poster card
+                    VStack(spacing: 16) {
+                        Text(p.usrLanText)
+                            .font(.system(size: 40, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .minimumScaleFactor(0.6)
+                            .foregroundColor(.colorModeOpposite.opacity(0.9))
+                            .frame(maxHeight: geo.size.height * 0.15)
+                        
+                        if p.transText.count > 80 {
+                            ScrollView {
+                                Text(p.transText)
+                                    .font(.system(size: 36, weight: .bold))
+                                    .minimumScaleFactor(0.15)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(nil)
+                                    .foregroundColor(.colorModeOpposite)
+                            }
+
+                        } else {
+                            Text(p.transText)
+                                .font(.system(size: 80, weight: .bold))
+                                .minimumScaleFactor(0.15)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(nil)
+                                .foregroundColor(.colorModeOpposite)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 32)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .fill(.colorModeMatch)
+                    )
+                    .padding(.horizontal, 16)
+                    .shadow(radius: 10, y: 4)
+                    
                     Spacer()
                 }
             }
-            .frame(maxHeight: 125)
-
-            
-            Spacer()
-            
-            HStack{
-                Spacer()
-                Text(p.usrLanText)
-                    .font(.system(size: 45))
-                    .minimumScaleFactor(0.1)
-                    .padding(20)
-                    .foregroundStyle(Color.gray)
-                    .frame(alignment: .trailing)
-                    .multilineTextAlignment(TextAlignment.trailing)
-            }
-            
-            Spacer()
-            
-            Text(p.transText)
-                .font(.system(size: 1000))
-                .minimumScaleFactor(0.01)
-                .padding(20)
-                .foregroundStyle(.black)
-            
-            
-            
-
+            .foregroundStyle(.colorModeMatch)
+            .presentationDragIndicator(.visible)
+            .interactiveDismissDisabled(false)
         }
-        .background(Color.accentColor)
-        .foregroundStyle(.colorModeMatch)
-        .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(false)
     }
     
 }
 
 #Preview {
-    singlePhraseView(p: Phrase(usrLanText: "I want to eat", transText: "Yo querio comer"))
+    singlePhraseView(p: Phrase(usrLanText: "I want to eat something delicious and amazing with an alcoholic beverage, then I want to have an amazing fuck",
+                               transText: "Quiero comer algo delicioso y espectacular con una bebida alcohólica, y luego quiero tener un polvo increíble."))
+}
+#Preview {
+    var pb = Phrasebook()
+
+    pb.phrases.append(
+        Phrase(usrLanText: "Where is the bathroom?", transText: "¿Dónde está el baño?")
+    )
+    pb.phrases.append(
+        Phrase(usrLanText: "Do you speak English?", transText: "¿Habla inglés?")
+    )
+    pb.phrases.append(
+        Phrase(usrLanText: "I need help.", transText: "Necesito ayuda.")
+    )
+
+    return PhrasebookView(p: pb)
 }

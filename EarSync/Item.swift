@@ -77,6 +77,11 @@ class ConversationPart: Codable, Identifiable {
         try container.encode(translatedText, forKey: .translatedText)
     }
     
+    func updateLocation(_ loc: CLLocation) {
+        latitude = loc.coordinate.latitude
+        longitude = loc.coordinate.longitude
+    }
+    
     init(text: String) async {
         originalText = text
         translatedText = await callToAIAsync(text: text)
@@ -153,4 +158,3 @@ final class Trip: Identifiable {
         self.practiceLanguage = practiceLanguage
     }
 }
-

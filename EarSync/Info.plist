@@ -8,5 +8,7 @@
 	<string>We need access to your voice for speech-to-text.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need microphone access for speech recognition.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>EarSync provides higher qualty translations with access to your location</string>
 </dict>
 </plist>
