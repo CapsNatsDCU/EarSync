@@ -24,7 +24,7 @@ struct SettingsView: View {
                 }
                 
                 Section("Pro Mode") {
-                    Toggle("Enable Pro Mode ($$)", isOn: $demoMode)
+                    Toggle("Enable Pro Mode ($$)", isOn: $proMode)
                 }
 
                 Section("Account") {

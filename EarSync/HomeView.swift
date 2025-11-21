@@ -12,7 +12,7 @@ struct HomeView: View {
     // Remember user’s last choice across launches
     @AppStorage("currentScenarioMode") private var currentScenarioMode: String = ScenarioMode.tourist.rawValue
     @State private var showModePicker = false
-
+    
     // Sheets/modals for all features
     @State private var showPhrasebook = false
     @State private var showCalendar = false
@@ -21,149 +21,198 @@ struct HomeView: View {
     @State private var showPronunciation = false
     @State private var showSync = false
     @State private var showStreamingTranslate = false
-
+    @State private var showSettings = false
+    
     // Temporary item used when we show TranslationView in a sheet
     @State private var tempItem = Item(timestamp: Date())
-
+    @AppStorage("proMode") private var proMode = false
+    
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-
-                    Text("Choose how you want to use EarSync")
-                        .font(.title2.bold())
-                        .padding(.top, 8)
-
-                    // Current mode card
-                    Button {
-                        withAnimation(.spring) {
-                            showModePicker.toggle()
-                        }
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Current mode")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Text(selectedMode.title)
-                                    .font(.title3.bold())
-                                Text(selectedMode.subtitle)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(2)
+        VStack {
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        
+                        Text("Choose how you want to use EarSync")
+                            .font(.title2.bold())
+                            .padding(.top, 8)
+                        
+                        // Current mode card
+                        Button {
+                            withAnimation(.spring) {
+                                showModePicker.toggle()
                             }
-                            Spacer()
-                            Image(systemName: showModePicker ? "chevron.up" : "chevron.down")
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color(.secondarySystemBackground))
-                        )
-                    }
-                    .buttonStyle(.plain)
-
-                    // Expanded list of all modes
-                    if showModePicker {
-                        VStack(spacing: 10) {
-                            ForEach(ScenarioMode.allCases) { mode in
-                                Button {
-                                    currentScenarioMode = mode.rawValue
-                                    withAnimation(.spring) {
-                                        showModePicker = false
-                                    }
-                                } label: {
-                                    HStack {
-                                        Image(systemName: mode.systemImage)
-                                        Text(mode.title)
-                                        Spacer()
-                                        if mode == selectedMode {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundStyle(.green)
-                                        }
-                                    }
-                                    .padding()
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .fill(Color(.systemBackground))
-                                    )
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Current mode")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text(selectedMode.title)
+                                        .font(.title3.bold())
+                                    Text(selectedMode.subtitle)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(2)
                                 }
-                                .buttonStyle(.plain)
+                                Spacer()
+                                Image(systemName: showModePicker ? "chevron.up" : "chevron.down")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(Color(.secondarySystemBackground))
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // Expanded list of all modes
+                        if showModePicker {
+                            VStack(spacing: 10) {
+                                ForEach(ScenarioMode.allCases) { mode in
+                                    Button {
+                                        currentScenarioMode = mode.rawValue
+                                        withAnimation(.spring) {
+                                            showModePicker = false
+                                        }
+                                    } label: {
+                                        HStack {
+                                            Image(systemName: mode.systemImage)
+                                            Text(mode.title)
+                                            Spacer()
+                                            if mode == selectedMode {
+                                                Image(systemName: "checkmark.circle.fill")
+                                                    .foregroundStyle(.green)
+                                            }
+                                        }
+                                        .padding()
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 14)
+                                                .fill(Color(.systemBackground))
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
                         }
+                        
+                        // Actions section
+                        ModeActionsView(
+                            mode: selectedMode,
+                            showPhrasebook: $showPhrasebook,
+                            showCalendar: $showCalendar,
+                            showTranslate: $showTranslate,
+                            showCamera: $showCamera,
+                            showPronunciation: $showPronunciation,
+                            showSync: $showSync,
+                            showLiveStreaming: $showStreamingTranslate
+                        )
+                        
+                        Spacer(minLength: 30)
                     }
-
-                    // Actions section
-                    ModeActionsView(
-                        mode: selectedMode,
-                        showPhrasebook: $showPhrasebook,
-                        showCalendar: $showCalendar,
-                        showTranslate: $showTranslate,
-                        showCamera: $showCamera,
-                        showPronunciation: $showPronunciation,
-                        showSync: $showSync,
-                        showLiveStreaming: $showStreamingTranslate
-                    )
-
-                    Spacer(minLength: 30)
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
+                .navigationTitle("EarSync")
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
+                    }
+                }
+                // Sheets for all features
+                .sheet(isPresented: $showPhrasebook) {
+                    NavigationStack {
+                        PhrasebookView(p: Phrasebook())
+                            .navigationTitle("Phrasebook")
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
+                }
+                .sheet(isPresented: $showCalendar) {
+                    NavigationStack {
+                        TravelCalendarView()
+                            .navigationTitle("Travel calendar")
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
+                }
+                .sheet(isPresented: $showTranslate) {
+                    NavigationStack {
+                        TranslationView(item: tempItem)
+                            .navigationTitle("Live translation")
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
+                }
+                .sheet(isPresented: $showCamera) {
+                    NavigationStack {
+                        VisualTranslationView()
+                            .navigationTitle("Camera translate")
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
+                }
+                .sheet(isPresented: $showPronunciation) {
+                    NavigationStack {
+                        PronunciationTrainingView()
+                            .navigationTitle("Pronunciation")
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
+                }
+                .sheet(isPresented: $showSettings) {
+                    NavigationStack {
+                        SettingsView()
+                            .navigationTitle("Settings")
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
+                }
+                .sheet(isPresented: $showSync) {
+                    NavigationStack {
+                        SyncSessionView()
+                            .navigationTitle("Sync session")
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
+                }
+                .sheet(isPresented: $showStreamingTranslate) {
+                    NavigationStack {
+                        StreamingTranslationView()
+                            .navigationTitle("Streaming translation")
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
+                }
             }
-            .navigationTitle("EarSync")
-            // Sheets for all features
-            .sheet(isPresented: $showPhrasebook) {
-                NavigationStack {
-                    PhrasebookView(p: Phrasebook())
-                        .navigationTitle("Phrasebook")
-                        .navigationBarTitleDisplayMode(.inline)
+            //Sample Ad
+            if !proMode {
+                HStack {
+                    ZStack{
+                        Rectangle()
+                        HStack{
+                            Text("AD")
+                                .foregroundStyle(Color(.colorModeMatch))
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12)
+                        HStack{
+                            Spacer()
+                            let name = ["Josiah", "Icia", "Matthew", "Caleb"]
+                            Text("Hire \(name.randomElement()!)!")
+                                .foregroundStyle(Color(.colorModeMatch))
+                                .font(.largeTitle)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12)
+                        HStack{
+                            Spacer()
+                            Text("EXAMPLE")
+                                .foregroundStyle(Color(.colorModeMatch))
+                        }
+                    }
                 }
-            }
-            .sheet(isPresented: $showCalendar) {
-                NavigationStack {
-                    TravelCalendarView()
-                        .navigationTitle("Travel calendar")
-                        .navigationBarTitleDisplayMode(.inline)
-                }
-            }
-            .sheet(isPresented: $showTranslate) {
-                NavigationStack {
-                    TranslationView(item: tempItem)
-                        .navigationTitle("Live translation")
-                        .navigationBarTitleDisplayMode(.inline)
-                }
-            }
-            .sheet(isPresented: $showCamera) {
-                NavigationStack {
-                    VisualTranslationView()
-                        .navigationTitle("Camera translate")
-                        .navigationBarTitleDisplayMode(.inline)
-                }
-            }
-            .sheet(isPresented: $showPronunciation) {
-                NavigationStack {
-                    PronunciationTrainingView()
-                        .navigationTitle("Pronunciation")
-                        .navigationBarTitleDisplayMode(.inline)
-                }
-            }
-            .sheet(isPresented: $showSync) {
-                NavigationStack {
-                    SyncSessionView()
-                        .navigationTitle("Sync session")
-                        .navigationBarTitleDisplayMode(.inline)
-                }
-            }
-            .sheet(isPresented: $showStreamingTranslate) {
-                NavigationStack {
-                    StreamingTranslationView()
-                        .navigationTitle("Streaming translation")
-                        .navigationBarTitleDisplayMode(.inline)
-                }
+                .frame(maxWidth: .infinity, maxHeight: 82)
             }
         }
     }
-
+    
     private var selectedMode: ScenarioMode {
         ScenarioMode(rawValue: currentScenarioMode) ?? .tourist
     }
