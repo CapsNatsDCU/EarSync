@@ -138,4 +138,54 @@ private func bestVoiceForENorES(_ lang: String) -> AVSpeechSynthesisVoice? {
     return AVSpeechSynthesisVoice.speechVoices().first { $0.language.hasPrefix(lang) }
 }
 
+// MARK: - Target-forced translation helper
 
+@available(iOS 16, *)
+func translateText(_ text: String, to targetBCP47: String) async -> String {
+    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return "" }
+
+    let demoMode = UserDefaults.standard.bool(forKey: "demoMode")
+
+    // --- Detect source language (BCP-47), with robust fallbacks ---
+    // Prefer NL detection (available < iOS 26 too).
+    let detectedBCP47: String = {
+        let r = NLLanguageRecognizer()
+        r.processString(trimmed)
+        if let lang = r.dominantLanguage?.rawValue {
+            return lang   // e.g. "en", "es", "fr"
+        }
+        // fallback to your existing heuristic (en/es) if NL fails
+        let two = detectENorES(from: trimmed) // "en" or "es"
+        return two
+    }()
+
+    // If detection produced something odd/empty, choose "en"
+    let sourceCode = detectedBCP47.isEmpty ? "en" : detectedBCP47
+
+    if #available(iOS 26, *), demoMode {
+        do {
+            let source = Locale.Language(identifier: sourceCode)       // <-- not nil anymore
+            let target = Locale.Language(identifier: targetBCP47)
+            let session = TranslationSession(installedSource: source, target: target)
+            return try await session.translate(trimmed).targetText
+        } catch {
+            return trimmed
+        }
+    } else {
+        // LLM path, force target with a strict instruction
+        let session = LanguageModelSession()
+        do {
+            let prompt = """
+            Translate the following text into \(targetBCP47). Return only the translation:
+
+            \(trimmed)
+            """
+            let response = try await session.respond(to: prompt)
+            let out = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            return out.isEmpty ? trimmed : out
+        } catch {
+            return trimmed
+        }
+    }
+}
