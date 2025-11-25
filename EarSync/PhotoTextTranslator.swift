@@ -5,7 +5,7 @@
 //  Created by Matthew Shaffer on 11/24/25.
 //
 import UIKit
-import Vision
+@preconcurrency import Vision
 
 enum OCR {
     static func recognizeText(from image: UIImage) async -> String {

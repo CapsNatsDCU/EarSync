@@ -321,16 +321,17 @@ fileprivate enum VTOCR {
         guard let cg = image.cgImage else { return "" }
 
         return await withCheckedContinuation { cont in
-            let request = VNRecognizeTextRequest { request, _ in
-                let strings: [String] = (request.results as? [VNRecognizedTextObservation])?
-                    .compactMap { $0.topCandidates(1).first?.string } ?? []
-                cont.resume(returning: strings.joined(separator: "\n"))
-            }
-            request.recognitionLevel = .accurate
-            request.usesLanguageCorrection = true
-
-            let handler = VNImageRequestHandler(cgImage: cg, options: [:])
+            // Perform Vision work on a background queue and create Vision objects inside the block
             DispatchQueue.global(qos: .userInitiated).async {
+                let request = VNRecognizeTextRequest { request, _ in
+                    let strings: [String] = (request.results as? [VNRecognizedTextObservation])?
+                        .compactMap { $0.topCandidates(1).first?.string } ?? []
+                    cont.resume(returning: strings.joined(separator: "\n"))
+                }
+                request.recognitionLevel = .accurate
+                request.usesLanguageCorrection = true
+
+                let handler = VNImageRequestHandler(cgImage: cg, options: [:])
                 do {
                     try handler.perform([request])
                 } catch {

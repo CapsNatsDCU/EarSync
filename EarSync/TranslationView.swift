@@ -224,7 +224,7 @@ struct TranslationView: View {
         print("[audio] startRecording called on simulator; skipping.")
         isRecording = false
         return
-        #endif
+        #else
 
         guard let recognizer = speechRecognizer, recognizer.isAvailable else {
             print("[audio] Speech recognizer not available")
@@ -293,6 +293,7 @@ struct TranslationView: View {
             print("[audio] Failed to start audio engine: \(error)")
             isRecording = false
         }
+        #endif
     }
 
     /// Stops recording and tears down the audio engine and recognition task.
@@ -316,4 +317,3 @@ struct TranslationView: View {
         isRecording = false
     }
 }
-
