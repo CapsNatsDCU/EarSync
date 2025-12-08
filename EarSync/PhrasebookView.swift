@@ -227,6 +227,25 @@ struct PhrasebookView: View {
 struct singlePhraseView: View {
     @Environment(\.dismiss) private var dismiss
     var p: Phrase
+
+    private let ttsSynth = AVSpeechSynthesizer()
+
+    private func speakForeign(_ text: String) {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            // Playback-only, ducking other audio; this matches the behavior in the main Phrasebook view.
+            try session.setCategory(.playback, mode: .default, options: [.duckOthers])
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("Failed to configure audio session for TTS in singlePhraseView: \(error)")
+        }
+
+        let utterance = AVSpeechUtterance(string: text)
+        // Use Spanish voice (es-ES) as the foreign language for the phrasebook.
+        utterance.voice = AVSpeechSynthesisVoice(language: "es-ES")
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+        ttsSynth.speak(utterance)
+    }
     
     var body: some View {
         GeometryReader {geo in
@@ -239,7 +258,9 @@ struct singlePhraseView: View {
                     // Top controls
                     HStack {
                         Button {
-                            speakText(text: p.transText)
+                            // Prefer the translated (foreign) text; fall back to the base text if needed.
+                            let textToSpeak = p.transText.isEmpty ? p.usrLanText : p.transText
+                            speakForeign(textToSpeak)
                         } label: {
                             Image(systemName: "speaker.wave.3.fill")
                                 .font(.system(size: 48, weight: .semibold))
