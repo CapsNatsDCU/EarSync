@@ -9,9 +9,13 @@ import SwiftUI
 import SwiftData
 
 struct HomeView: View {
+    @Environment(\.modelContext) private var modelContext
+
     // Remember user’s last choice across launches
     @AppStorage("currentScenarioMode") private var currentScenarioMode: String = ScenarioMode.tourist.rawValue
     @State private var showModePicker = false
+
+    @Query private var phrasebooks: [Phrasebook]
     
     // Sheets/modals for all features
     @State private var showPhrasebook = false
@@ -22,10 +26,13 @@ struct HomeView: View {
     @State private var showSync = false
     @State private var showStreamingTranslate = false
     @State private var showSettings = false
+    @State private var showChatHistory = false
     
     // Temporary item used when we show TranslationView in a sheet
     @State private var tempItem = Item(timestamp: Date())
     @AppStorage("proMode") private var proMode = false
+    @AppStorage("inputLanguageCode") private var inputLanguageCode = "en-US"
+    @AppStorage("outputLanguageCode") private var outputLanguageCode = "es-ES"
     
     var body: some View {
         VStack {
@@ -106,7 +113,8 @@ struct HomeView: View {
                             showCamera: $showCamera,
                             showPronunciation: $showPronunciation,
                             showSync: $showSync,
-                            showLiveStreaming: $showStreamingTranslate
+                            showLiveStreaming: $showStreamingTranslate,
+                            showChatHistory: $showChatHistory
                         )
                         
                         Spacer(minLength: 30)
@@ -126,7 +134,7 @@ struct HomeView: View {
                 // Sheets for all features
                 .sheet(isPresented: $showPhrasebook) {
                     NavigationStack {
-                        PhrasebookView(p: Phrasebook())
+                        PhrasebookView(p: phrasebookForSheet)
                             .navigationTitle("Phrasebook")
                             .navigationBarTitleDisplayMode(.inline)
                     }
@@ -180,6 +188,13 @@ struct HomeView: View {
                             .navigationBarTitleDisplayMode(.inline)
                     }
                 }
+                .sheet(isPresented: $showChatHistory) {
+                    NavigationStack {
+                        ContentView()
+                            .navigationTitle("Chat history")
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
+                }
             }
             //Sample Ad
             if !proMode {
@@ -213,6 +228,16 @@ struct HomeView: View {
         }
     }
     
+    private var phrasebookForSheet: Phrasebook {
+        if let existing = phrasebooks.first {
+            return existing
+        } else {
+            let pb = Phrasebook()
+            modelContext.insert(pb)
+            return pb
+        }
+    }
+
     private var selectedMode: ScenarioMode {
         ScenarioMode(rawValue: currentScenarioMode) ?? .tourist
     }
@@ -229,6 +254,7 @@ struct ModeActionsView: View {
     @Binding var showPronunciation: Bool
     @Binding var showSync: Bool
     @Binding var showLiveStreaming: Bool
+    @Binding var showChatHistory: Bool
 
     @AppStorage("currentScenarioMode") var currentScenarioMode: String = ScenarioMode.tourist.rawValue
 
@@ -265,6 +291,9 @@ struct ModeActionsView: View {
             }
             ActionRow(title: "Pronunciation training", systemImage: "mic") {
                 showPronunciation = true
+            }
+            ActionRow(title: "Chat history", systemImage: "message") {
+                showChatHistory = true
             }
 
             // ------------------------------------------------

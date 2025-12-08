@@ -24,9 +24,19 @@ final class Item: Identifiable {
         let ot = message.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !ot.isEmpty else { return }
 
-        let tt = await callToAIAsync(text: ot)
-        let part = ConversationPart(originalText: ot, translatedText: tt)
+        // Create a new conversation part with placeholder translated text.
+        let part = ConversationPart(originalText: ot, translatedText: "")
+
+        // Append it to this item's conversation so SwiftData can track and update it.
         self.conversation.append(part)
+
+        // Use the new, context-aware AI pass when available.
+        if #available(iOS 26, *) {
+            await callToAINew(c: part)
+        } else {
+            // Fallback: just echo the original text if the new API isn't available.
+            part.translatedText = ot
+        }
     }
 }
 
@@ -84,7 +94,7 @@ class ConversationPart: Codable, Identifiable {
     
     init(text: String) async {
         originalText = text
-        translatedText = await callToAIAsync(text: text)
+        translatedText = await simpleTranslate(text: text)
     }
 
 }
@@ -95,6 +105,7 @@ final class Phrasebook: Codable, Identifiable {
     var userLan: String = "en"
     var speakerLan: String = "es"
     var phrases: [Phrase] = []
+    var targetRegon: String?
 
     init(userLan: String = "en") {
         self.userLan = userLan
@@ -138,7 +149,7 @@ final class Phrase: Identifiable {
     
     init(text: String) async {
         self.usrLanText = text
-        self.transText = await callToAIAsync(text: text)
+        self.transText = await simpleTranslate(text: text)
     }
 }
 
@@ -157,4 +168,12 @@ final class Trip: Identifiable {
         self.smartDownload = smartDownload
         self.practiceLanguage = practiceLanguage
     }
+}
+
+struct SentenceContext {
+    var previousSource: String?      // last full sentence in source language
+    var previousTarget: String?      // last full sentence in target language
+
+    var currentSource: String        // current sentence we’re building in source
+    var currentTarget: String?       // current translation for that sentence
 }

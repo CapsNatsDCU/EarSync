@@ -15,13 +15,28 @@ struct ContentView: View {
     @Query private var items: [Item]
 
     var body: some View {
-        NavigationSplitView {
+        NavigationStack {
             List {
                 ForEach(items) { item in
                     NavigationLink {
                         TranslationView(item: item)
                     } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                        VStack(alignment: .leading, spacing: 4) {
+                            // Primary: timestamp
+                            Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                                .font(.headline)
+
+                            // Secondary: preview of the most recent original text, if available
+                            if let last = item.conversation.last {
+                                let preview = last.originalText.trimmingCharacters(in: .whitespacesAndNewlines)
+                                if !preview.isEmpty {
+                                    Text(preview.count > 60 ? String(preview.prefix(60)) + "…" : preview)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                        }
                     }
                 }
                 .onDelete(perform: deleteItems)
@@ -36,8 +51,7 @@ struct ContentView: View {
                     }
                 }
             }
-        } detail: {
-            Text("Select an item")
+            .navigationTitle("Chat history")
         }
     }
 

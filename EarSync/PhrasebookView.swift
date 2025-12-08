@@ -207,6 +207,8 @@ struct PhrasebookView: View {
                                     selectedPhrase = phrase
                                 }
                             }
+                        } else {
+                            Text("No Saved Phrases")
                         }
                     }
                 }
@@ -237,7 +239,7 @@ struct singlePhraseView: View {
                     // Top controls
                     HStack {
                         Button {
-                            speekText(text: p.transText)
+                            speakText(text: p.transText)
                         } label: {
                             Image(systemName: "speaker.wave.3.fill")
                                 .font(.system(size: 48, weight: .semibold))
@@ -309,7 +311,7 @@ struct singlePhraseView: View {
 }
 
 #Preview {
-    singlePhraseView(p: Phrase(usrLanText: "I want to eat something delicious and amazing with an alcoholic beverage, then I want to have an amazing fuck",
+    singlePhraseView(p: Phrase(usrLanText: "I want to eat something delicious and amazing with an alcoholic beverage, then I want to have an amazing chat",
                                transText: "Quiero comer algo delicioso y espectacular con una bebida alcohólica, y luego quiero tener un polvo increíble."))
 }
 #Preview {

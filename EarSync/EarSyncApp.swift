@@ -29,8 +29,14 @@ struct EarSyncApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HomeTabView()
+            HomeView()
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(for: [
+            Item.self,
+            ConversationPart.self,
+            Phrasebook.self,
+            Phrase.self,
+            Trip.self
+        ])
     }
 }

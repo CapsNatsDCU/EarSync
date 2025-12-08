@@ -9,7 +9,7 @@ import SwiftUI
 import PhotosUI
 import VisionKit
 import AVFoundation
-import Vision
+@preconcurrency import Vision
 import UIKit
 
 struct VisualTranslationView: View {
@@ -92,23 +92,23 @@ struct VisualTranslationView: View {
             }
             .font(.subheadline)
 
-            // Live DataScanner overlay (like Google camera translate)
-            if #available(iOS 16.0, *),
-               DataScannerViewController.isSupported,
-               DataScannerViewController.isAvailable {
-                Text("Live camera text (overlay)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                VTScannerView(
-                    recognizesMultiple: true,
-                    isScanning: .constant(true)
-                ) { _ in
-                    // No-op to avoid spamming main text; wire custom behavior if you want.
-                }
-                .frame(minHeight: 220)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
+//            // Live DataScanner overlay (like Google camera translate)
+//            if #available(iOS 16.0, *),
+//               DataScannerViewController.isSupported,
+//               DataScannerViewController.isAvailable {
+//                Text("Live camera text (overlay)")
+//                    .font(.caption)
+//                    .foregroundStyle(.secondary)
+//
+//                VTScannerView(
+//                    recognizesMultiple: true,
+//                    isScanning: .constant(true)
+//                ) { _ in
+//                    // No-op to avoid spamming main text; wire custom behavior if you want.
+//                }
+//                .frame(minHeight: 220)
+//                .clipShape(RoundedRectangle(cornerRadius: 12))
+//            }
 
             // Preview of last still image you captured or chose
             if let img = previewImage {
@@ -140,7 +140,7 @@ struct VisualTranslationView: View {
                     if isTranslating { ProgressView().scaleEffect(0.8) }
                     Spacer()
                     Button {
-                        speekText(text: translatedText)
+                        speakText(text: translatedText)
                     } label: {
                         Image(systemName: "speaker.wave.2.fill")
                     }

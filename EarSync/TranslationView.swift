@@ -6,6 +6,7 @@ import AVFoundation
 
 struct TranslationView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query private var phrasebooks: [Phrasebook]
     @Bindable var item: Item
 
     @State private var text = ""
@@ -20,15 +21,16 @@ struct TranslationView: View {
     @State private var copied = false
 
     @AppStorage("currentScenarioMode") private var currentScenarioMode: String = ScenarioMode.tourist.rawValue
-    // Shared input language for STT across the app
-    @AppStorage("inputLanguage") private var inputLanguage: String = "en-US"
+    // Shared input/output language codes across the app
+    @AppStorage("inputLanguageCode") private var inputLanguageCode: String = "en-US"
+    @AppStorage("outputLanguageCode") private var outputLanguageCode: String = "es-ES"
 
     private let languageAvailability = LanguageAvailability()
 
     // Audio / speech properties
     private let audioEngine = AVAudioEngine()
     private var speechRecognizer: SFSpeechRecognizer? {
-        SFSpeechRecognizer(locale: Locale(identifier: inputLanguage))
+        SFSpeechRecognizer(locale: Locale(identifier: inputLanguageCode))
     }
 
     @MainActor
@@ -50,7 +52,7 @@ struct TranslationView: View {
             }
 
             // Input language toggle shared with StreamingTranslationView
-            Picker("Input language", selection: $inputLanguage) {
+            Picker("Input language", selection: $inputLanguageCode) {
                 Text("English").tag("en-US")
                 Text("Spanish").tag("es-ES")
             }
@@ -77,11 +79,28 @@ struct TranslationView: View {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     part.isSaved.toggle()
                                 }
+
+                                // Get or create the shared phrasebook
+                                let pb = defaultPhrasebook(in: modelContext)
+
+                                if part.isSaved {
+                                    // Add this conversation line as a phrase
+                                    let phrase = Phrase(c: part)
+                                    pb.addPhrase(phrase)
+                                } else {
+                                    // Optional: remove from phrasebook when un-starring
+                                    if let index = pb.phrases.firstIndex(where: {
+                                        $0.usrLanText == part.originalText &&
+                                        $0.transText == part.translatedText
+                                    }) {
+                                        pb.phrases.remove(at: index)
+                                    }
+                                }
+
                                 do {
-                                    modelContext.insert(part)
                                     try modelContext.save()
                                 } catch {
-                                    print("[debug] failed to save conversation part: \(error)")
+                                    print("[debug] failed to save phrasebook: \(error)")
                                 }
                             }) {
                                 Image(systemName: part.isSaved ? "star.slash.fill" : "star")
@@ -112,7 +131,7 @@ struct TranslationView: View {
                                                 }
                                             }
                             Button(action: {
-                                speekText(text: part.translatedText)
+                                speakText(text: part.translatedText)
                             }, label: {
                                 Image(systemName: "speaker.wave.3")
                                     .font(.title)
@@ -178,7 +197,7 @@ struct TranslationView: View {
                         // Ensure this item is attached to the current ModelContext before mutating relationships
                         modelContext.insert(item)
 
-                        // Note: actual translation logic is in callToAIAsync(...) in NetworkCalls.swift.
+                        // Note: actual translation logic is in simpleTranslate(...) in NetworkCalls.swift.
                         // If that function returns the same text, add a fallback there.
                         Task {
                             await item.appendPart(input)
@@ -201,8 +220,26 @@ struct TranslationView: View {
         .onAppear {
             requestSpeechPermission()
         }
+        .onChange(of: inputLanguageCode) { oldValue, newValue in
+            if newValue.hasPrefix("en") {
+                outputLanguageCode = "es-ES"
+            } else if newValue.hasPrefix("es") {
+                outputLanguageCode = "en-US"
+            }
+        }
         .padding(.horizontal, 25)
         .defaultScrollAnchor(.bottom)
+    }
+
+    // Helper to fetch or create the default phrasebook
+    private func defaultPhrasebook(in context: ModelContext) -> Phrasebook {
+        if let existing = phrasebooks.first {
+            return existing
+        } else {
+            let pb = Phrasebook()
+            context.insert(pb)
+            return pb
+        }
     }
 
     // MARK: - Speech Permission
